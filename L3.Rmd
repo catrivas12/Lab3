@@ -1,0 +1,330 @@
+---
+
+Group: Nahomi, Cat, Victor 
+title: "Lab 3"
+output: html_document
+date: "2024-02-15"
+---
+
+
+```
+#downloading package 
+library(ggplot2)
+library(tidyverse)
+
+#loading the data I will be using
+load("~/Desktop/RWork/V0500_Lecture1”/BRFSS2022_rev.RData")
+
+#factor recoding the age of participants to see the number of observations that falls into these categories. Midpoint of each range. 
+brfss22$Age_midpt <- fct_recode(brfss22$X_AGEG5YR, "21" = "Age 18 to 24",
+                                "27" = "Age 25 to 29", "32" = "Age 30 to 34",
+                                "37" = "Age 35 to 39", "42" = "Age 40 to 44",
+                                "47" = "Age 45 to 49", "52" = "Age 50 to 54",
+                                "57" = "Age 55 to 59", "62" = "Age 60 to 64",
+                                "67" = "Age 65 to 69", "72" = "Age 70 to 74",
+                                "77" = "Age 75 to 79", "82" = "Age 80 or older",
+                                NULL = "Dont know/Refused/Missing")
+brfss22$Age_midpt <- as.numeric(levels(brfss22$Age_midpt))[brfss22$Age_midpt]
+
+#This first line is creating a variable that pulls data from the trisate area. Then creating a subset from the brfss22 data to only get information from the tristate area.
+select_tristate <- (brfss22$X_STATE == "New York") | (brfss22$X_STATE == "New Jersey") | (brfss22$X_STATE == "Connecticut")
+brfss_tristate <- subset(brfss22,select_tristate)
+
+
+#I think that as age increases there will aslo be an increase in BMI
+#plotting BMI and age 
+
+#Creating a graph with the brfss tristate data with the x axis as the midpoint that was assigned 
+p_tri <- ggplot(data = brfss_tristate,
+                mapping = aes(x = Age_midpt,
+                              y = X_BMI5))
+                              
+#adding this command spaces out the x-axis                               
+p_tri + geom_smooth()
+
+#using this code the x-vaules will be jumbled and you won't be ablet to interpret it well. This code creates a scatterplot 
+ p_tri + geom_jitter(width = 2.5, height = NULL, alpha = 0.05)
+ 
+ #this organizes the values better. The jitter command adds some random noise to each value and the geom_point takes away that noise. The height and width tell it to add 2.5 on each side of the x value but to not touch the y value.
+ p_tri + geom_point(width = 2.5, height = NULL, alpha = 0.05)
+ 
+ #I expect that people living in NYC will have the heights BMI
+
+#creating a graph with the brffss tristate data (Conneticut, NJ, NY) with the x axis as the midpoint of the age range and the y axis as the bmi 
+p_tri <- ggplot(data = brfss_tristate,
+                mapping = aes(x = Age_midpt,
+                              y = X_BMI5,
+                              color = X_STATE,
+                              fill = X_STATE))
+p_tri + geom_smooth()
+
+#loading the summary of the data to look for info about other states
+summary(brfss_small)
+
+#Going to look at Ohio and Maryland, Minnesota. This code is creating a subset of the brfss22 data with the new states I selected.
+select_new_states<- (brfss22$X_STATE == "Ohio") | (brfss22$X_STATE == "Maryland") | (brfss22$X_STATE == "Minnesota")
+brfss_select_new_states <- subset(brfss22,select_new_states)
+
+#creating a graph with the new data from the states I selected with the x axis ad the age midpoint and the y axis as the bmi 
+p_tri <- ggplot(data = brfss_select_new_states,
+                mapping = aes(x = Age_midpt,
+                              y = X_BMI5))
+p_tri + geom_smooth()
+
+#age and BMI for the three new selected states. Creates the scartterplot without the extra random noise.
+p_tri + geom_point(width = 2.5, height = NULL, alpha = 0.05)
+
+#graph of age and BMI in Maryland, Ohio, and Minnesota 
+p_tri <- ggplot(data = brfss_select_new_states,
+                mapping = aes(x = Age_midpt,
+                              y = X_BMI5,
+                              color = X_STATE,
+                              fill = X_STATE))
+p_tri + geom_smooth()
+
+
+#as.numeric is converting characters into numbers, is.na is putting it as n/a if anything is blank for missing values in the data
+ACEdidntask <- (as.numeric(is.na(brfss22$ACEDEPRS)) + 
+                        as.numeric(is.na(brfss22$ACEDRINK)) +
+                        as.numeric(is.na(brfss22$ACEDRUGS)) +
+                        as.numeric(is.na(brfss22$ACEPRISN)) +
+                        as.numeric(is.na(brfss22$ACEDIVRC)) +
+                        as.numeric(is.na(brfss22$ACEPUNCH)) +
+                        as.numeric(is.na(brfss22$ACEHURT1)) +
+                        as.numeric(is.na(brfss22$ACESWEAR)) +
+                        as.numeric(is.na(brfss22$ACETOUCH)) )
+#this is creating a new varibale for acedidnttask and to code any of those missing values as zero
+select_ACE <- (ACEdidntask == 0) # with zero missing values for any of ACE questions
+
+#creating a new variable from the brfss22 data to mark any missing values as n/a
+brfss_ACE <- subset(brfss22, select_ACE)
+
+#Looking at the data of people who drink and of ppl who do drugs
+xtabs(~ brfss_ACE$ACEDRINK + brfss_ACE$ACEDRUGS)
+
+#flattened table version which is easier to read
+ftable(xtabs(~ brfss_ACE$ACEDRINK + brfss_ACE$ACEDRUGS))
+
+#makes the data easier to read (factor recode). recoding the long words to shortened words. Recoding from "Yes, Averse Childhoof Experience... with juust "yes"
+brfss_ACE$ACEDRINK_recode <- fct_recode(brfss_ACE$ACEDRINK, 
+                                        "yes " = "Yes, Adverse Childhood Exper, lived with someone who was a problem drinker or alcoholic",
+                                "No " = "No", 
+                                "dont know not sure " = "dont know not sure",
+                                "refused " = "refused"
+)
+
+# might want to set some values as missing,
+#                                 NULL = "dont know not sure"
+
+#to look at the response after recoding the data
+print(brfss_ACE$ACEDRINK_recode)
+
+#to get a concise number of yes,no,not sure without having to count
+summary(brfss_ACE$ACEDRINK_recode)
+
+#what fraction of people lived with a problem drinker?
+#A: 11472/47972
+
+#what fraction lived with someone with a drug problem?
+#A: 
+
+#recode for drugs
+brfss_ACE$ACEDRUGS_recode<- fct_recode(brfss_ACE$ACEDRUGS)
+
+#to look at the response after recoding the data
+print(brfss_ACE$ACEDRUGS_recode)
+
+#summary of the recoded data 
+summary(brfss_ACE$ACEDRUGS_recode)
+
+#helps understand how many people were asked the questions after the missing vlaue were assigned a zero
+summary(ACEdidntask)
+quantile(ACEdidntask, probs = c(0.01,0.05,0.1,0.15,0.2))
+
+#summary of the brfss data
+summary(brfss22)
+
+#summary of brfss data while also assinging zero to any missing values
+summary(brfss_ACE)
+
+
+
+
+#This is for my purposes to help me remember things. Cheatsheet.
+1. geom_point() makes scatterplots
+2. geom_bar() makes barplots
+3. geom_boxplot() makes boxplots
+
+#the tidy data that ggplot wants is in a long form. This means that every variable is a column while every observation is a row. On the other hand the wide format is when some varibles are spread out across columns 
+
+#GOING THROUGH THE EXAMPLES IN CHAPTER 3
+
+#loading the package
+library(gapminder)
+
+#seeing what the data look like
+gapminder
+
+#plotting the life expectancy against per capita GDP for all country-years in the data. This code is creating an object called "P." Then telling the ggplot() function what data we will be using.
+p <- ggplot(data = gapminder)
+
+
+#This code will tell the data which visual elements to apply to certain variables. A mapping does not directly say what particular colors or shapes will be on the plot, instead they say which variables will be represented by visual elements like a color,shape, or point in the plot area.
+p <- ggplot(data = gapminder,
+            mapping = aes(x= gdpPercap,
+                          y= lifeExp))
+                          
+#What happens is we just type p in now?
+p
+#here we have told it the information it needs abot the mappings we want but have not given it instructions as to what type of plot to draw
+
+#We will now use the object we created "P" and and create a scatterplot with the mapping we gave it earlier.
+p + geom_point()
+
+#Trying the geom_smooth() function by adding it to the p object we created
+p <- ggplot(data = gapminder,                                                       mapping = aes(x= gdpPercap,
+                    y= lifeExp))                                              
+p + geom_smooth()
+#The function geom_smooth() has calculated a smoothed line for us and shaded the standard error for the line
+
+#Adding the function geom_point() will add the data points and the line together
+p <- ggplot(data = gapminder,
+            mapping= aes(x = gdpPercap,
+                    y= lifeExp))
+p + geom_smooth() + geom_point()
+
+
+#when we run the code above it tells us that geom_smooth() is using a method called gam which means that there are other methods. Here we will try lm method for linear model
+p <- ggplot(data = gapminder,
+    mapping= aes(x = gdpPercap,
+                y = lifeExp))
+p + geom_smooth(method = "lm" ) + geom_point()
+
+#In this code we are going from the linear model to a log form in order for the data to be normally disributed across the x-axis
+p <- ggplot(data = gapminder,
+          mapping=aes(x = gdpPercap,
+                      y= lifeExp))
+p + geom_point() +
+geom_smooth(method = "gam") +
+scale_x_log10()
+#this code transformed the x axis and repositioned the points 
+
+
+#this code will relabel the a-axis for the log function
+p <- ggplot(data = gapminder,
+        mapping= aes(x= gdpPercap,
+                    y= lifeExp))
+p + geom_point() +
+    geom_smooth(method = "gam") +
+    scale_x_log10(labels = scales::dollar)
+#If I want to change the axis without loding the library(sales) and then using the dollar() function I have to use the formate thelibrary::thefuntion
+
+#Do not use the aes function to change the color of the points in the graph instead do this
+p <- ggplot(data = gapminder,
+    mapping= aes(x= gdpPercap,
+                y=lifeExp))
+p + geom_point (color = "purple") +
+geom_smooth(method = "loess")+
+scale_x_log10()
+
+#in this example we will be using a linear model and changing the color, size, and se(turns off the shading) of the line for the model
+
+p <- ggplot(data = gapminder,
+    mapping = aes(x= gdpPercap,
+                y= lifeExp))
+p + geom_point (alpha = 0.3) +
+geom_smooth(color= "orange", se = FALSE, size = 8, method = "lm")
+scale_x_log10()
+#aplha command controls the transparency of the object that is to be drawn. It ranges from 0 to 1.
+
+
+#Plotting graph with everything
+p <- ggplot(data = gapminder,
+    mapping=aes(x= gdpPercap,
+                y= lifeExp))
+p + geom_point(alpha = 0.3) +
+geom_smooth(method = "gam") + 
+scale_x_log10(labels = scales::dollar) + 
+labs(x = "GDP Per Capita", y = "Life Expectancy in Years",
+      tile = "Economic Growth and Life Expectancy", 
+      subtitle = "Data points are country-years",
+      caption = "Source: Gapminder.")
+# "gam" filters out certain points that aren't in line with the lm while using lm still includes them regardless of whether or not the points are near the line 
+
+#this code will use color=continent to assign a color to the variable continent and create a key 
+p <- ggplot(data = gapminder,
+        mapping=aes(x = gdpPercap,
+            y = lifeExp,
+            color= continent))
+p+ geom_point()+
+geom_smooth(method= "loess")+
+scale_x_log10()
+
+#here we use the fill commamnd to shade in the interior of the smoother's standard error ribbon
+p <- ggplot(data = gapminder,
+            mapping=aes(x= gdpPercap,
+                        y = lifeExp,
+                        color = continent,
+                        fill = continent))
+p + geom_point()+
+geom_smooth(method= "loess")
+scale_x_log10()
+
+
+#This code will also color by continent but per geom, without having five seperate smoothers. It will add color for all of the continents. 
+p <- ggplot(data = gapminder, mapping = aes( x=gdpPercap, y=lifeExp))
+p + geom_point(mapping = aes(color = continent))+
+geom_smooth(method ="loess")+
+scale_x_log10()
+
+#this code will maps a continuous variable to the color aesthetic. Taking the log of the population in the aes statement. 
+p <- ggplot (data = gapminder, 
+            mapping= aes(x=gdpPercap, y=lifeExp))
+p + geom_point(mapping= aes(color=log(pop)))+
+scale_x_log10()
+
+#saving the work. This code tells R to make 8*5 figures
+knitr::opts_chunk$set(fig.width=8, fig.height=5) 
+
+#Different ways to save the figures individually. In the file name we assign it whatever name we want to call it. This will save it as pmg file.
+ggsave(filename = "my_figure.png")
+
+#If we want to change the type we of file we save it as we just have to change the extension of the file
+ggsave(filename = "my_figure.pdf")
+
+#If we don't want to type filename= we can still save it as long as the name of the file is the first arguement you five ggsave(). For example: Look at last piece of code here.
+p_out <- p + geom_point() +
+    geom_smooth(method = "loess") +
+    scale_x_log10()
+
+ggsave("my_figure.pdf", plot = p_out)
+
+
+
+#Practice using gapminder 
+
+#Comparing what happens when we use geom_smooth before geom_point
+p <- ggplot(data = gapminder,
+            mapping=aes(x=gdpPercap,
+                        y=lifeExp))
+p + geom_smooth(method = "lm")+
+geom_point()
+
+#####
+
+p <- ggplot(data = gapminder,
+            mapping=aes(x=gdpPercap,
+                        y=lifeExp))
+p + geom_point()+
+geom_smooth(method = "lm")
+
+#The only difference when you use one over the other first is that if you do geom_point first the line will be on top of the data points while if you do geom_smooth first the line will be below the data points 
+
+p <- ggplot(data = gapminder,
+      mapping=aes(x=pop,
+                  y= lifeExp ))
+p + geom_point()+
+geom_smooth(method = "lm")
+scale_x_log10()
+
+lm (formula = gapmider_pop ~ gapminder_lifeExp)
